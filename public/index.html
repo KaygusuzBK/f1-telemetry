@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="tr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>F1 25 Advanced Telemetry Dashboard</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <header class="page-header">
+      <div>
+        <h1>F1 25 Advanced Telemetry Dashboard</h1>
+        <p>Canli UDP telemetry + session + lap + status + damage + event monitor</p>
+      </div>
+      <div id="connectionBadge" class="badge waiting">Veri bekleniyor</div>
+    </header>
+
+    <main class="grid">
+      <section class="panel panel-wide">
+        <h2>Canli Ozet</h2>
+        <div class="stat-grid">
+          <article class="stat-card"><span>Hiz</span><strong id="speedValue">0 km/h</strong></article>
+          <article class="stat-card"><span>Vites</span><strong id="gearValue">N</strong></article>
+          <article class="stat-card"><span>RPM</span><strong id="rpmValue">0</strong></article>
+          <article class="stat-card"><span>DRS</span><strong id="drsValue">Kapali</strong></article>
+          <article class="stat-card"><span>Pozisyon</span><strong id="positionValue">-</strong></article>
+          <article class="stat-card"><span>Tur</span><strong id="lapValue">-</strong></article>
+          <article class="stat-card"><span>Yakit</span><strong id="fuelValue">-</strong></article>
+          <article class="stat-card"><span>ERS</span><strong id="ersValue">-</strong></article>
+          <article class="stat-card"><span>Toplam Paket</span><strong id="packetCountValue">0</strong></article>
+          <article class="stat-card"><span>Oyuncu Surucu</span><strong id="driverValue">-</strong></article>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>Pedal ve Direksiyon</h2>
+        <div class="bar-row"><span>Gaz</span><div class="bar"><div id="throttleBar" class="fill throttle"></div></div><strong id="throttleText">0%</strong></div>
+        <div class="bar-row"><span>Fren</span><div class="bar"><div id="brakeBar" class="fill brake"></div></div><strong id="brakeText">0%</strong></div>
+        <div class="bar-row"><span>Debriyaj</span><div class="bar"><div id="clutchBar" class="fill clutch"></div></div><strong id="clutchText">0%</strong></div>
+        <div class="bar-row"><span>Direksiyon</span><div class="bar"><div id="steerBar" class="fill steer"></div></div><strong id="steerText">0%</strong></div>
+      </section>
+
+      <section class="panel">
+        <h2>Session Durumu</h2>
+        <dl class="kv-grid">
+          <dt>Session</dt><dd id="sessionTypeValue">-</dd>
+          <dt>Hava</dt><dd id="weatherValue">-</dd>
+          <dt>Track Sic.</dt><dd id="trackTempValue">-</dd>
+          <dt>Air Sic.</dt><dd id="airTempValue">-</dd>
+          <dt>Safety Car</dt><dd id="safetyCarValue">-</dd>
+          <dt>Kalan Sure</dt><dd id="sessionTimeLeftValue">-</dd>
+          <dt>Pit Limiti</dt><dd id="pitLimitValue">-</dd>
+          <dt>Marshal Zone</dt><dd id="marshalValue">-</dd>
+        </dl>
+      </section>
+
+      <section class="panel">
+        <h2>Hiz Grafigi (son 100 ornek)</h2>
+        <canvas id="speedChart" width="640" height="220"></canvas>
+      </section>
+
+      <section class="panel">
+        <h2>RPM Grafigi (son 100 ornek)</h2>
+        <canvas id="rpmChart" width="640" height="220"></canvas>
+      </section>
+
+      <section class="panel panel-wide">
+        <h2>Lap Verisi</h2>
+        <dl class="kv-grid">
+          <dt>Son Tur</dt><dd id="lastLapValue">-</dd>
+          <dt>Mevcut Tur</dt><dd id="currentLapTimeValue">-</dd>
+          <dt>Sektor 1</dt><dd id="sector1Value">-</dd>
+          <dt>Sektor 2</dt><dd id="sector2Value">-</dd>
+          <dt>Delta (On Arac)</dt><dd id="deltaFrontValue">-</dd>
+          <dt>Delta (Lider)</dt><dd id="deltaLeaderValue">-</dd>
+          <dt>Tur Mesafesi</dt><dd id="lapDistanceValue">-</dd>
+          <dt>Pit Stop</dt><dd id="pitStopsValue">-</dd>
+          <dt>Penalti</dt><dd id="penaltyValue">-</dd>
+        </dl>
+      </section>
+
+      <section class="panel panel-wide">
+        <h2>Lastik ve Fren Detayi</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Konum</th>
+              <th>Yuzey Sic. (C)</th>
+              <th>Ic Sic. (C)</th>
+              <th>Basinc (PSI)</th>
+              <th>Fren Sic. (C)</th>
+              <th>Zemin Tipi</th>
+              <th>Asinma (%)</th>
+              <th>Lastik Hasar (%)</th>
+              <th>Fren Hasar (%)</th>
+            </tr>
+          </thead>
+          <tbody id="tyreTableBody">
+            <tr><td colspan="9">Veri bekleniyor...</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section class="panel">
+        <h2>Arac Durumu</h2>
+        <dl class="kv-grid">
+          <dt>Fuel Mix</dt><dd id="fuelMixValue">-</dd>
+          <dt>Fuel (kg)</dt><dd id="fuelTankValue">-</dd>
+          <dt>Kalan Tur</dt><dd id="fuelLapValue">-</dd>
+          <dt>ERS Mode</dt><dd id="ersModeValue">-</dd>
+          <dt>ERS Harvest (MGU-K)</dt><dd id="ersKValue">-</dd>
+          <dt>ERS Harvest (MGU-H)</dt><dd id="ersHValue">-</dd>
+          <dt>ERS Deploy</dt><dd id="ersDeployValue">-</dd>
+          <dt>Pit Limiter</dt><dd id="pitLimiterValue">-</dd>
+          <dt>ABS</dt><dd id="absValue">-</dd>
+        </dl>
+      </section>
+
+      <section class="panel">
+        <h2>Hasar Ozet</h2>
+        <dl class="kv-grid">
+          <dt>Front Wing L/R</dt><dd id="frontWingValue">-</dd>
+          <dt>Rear Wing</dt><dd id="rearWingValue">-</dd>
+          <dt>Floor / Diffuser</dt><dd id="floorDiffValue">-</dd>
+          <dt>Sidepod</dt><dd id="sidepodValue">-</dd>
+          <dt>Gearbox Wear</dt><dd id="gearboxWearValue">-</dd>
+          <dt>Engine Wear</dt><dd id="engineWearValue">-</dd>
+          <dt>DRS Arizasi</dt><dd id="drsFaultValue">-</dd>
+          <dt>ERS Arizasi</dt><dd id="ersFaultValue">-</dd>
+          <dt>Motor Durumu</dt><dd id="engineFailureValue">-</dd>
+        </dl>
+      </section>
+
+      <section class="panel">
+        <h2>Son Eventler</h2>
+        <ul id="eventList" class="event-list">
+          <li>Event bekleniyor...</li>
+        </ul>
+      </section>
+
+      <section class="panel">
+        <h2>Paket Dagilimi</h2>
+        <pre id="packetDistribution">{"status":"bekleniyor"}</pre>
+      </section>
+
+      <section class="panel">
+        <h2>En Son Baslik</h2>
+        <pre id="headerJson">{"status":"bekleniyor"}</pre>
+      </section>
+
+      <section class="panel panel-wide">
+        <h2>Raw Snapshot JSON</h2>
+        <pre id="snapshotJson">{"status":"bekleniyor"}</pre>
+      </section>
+    </main>
+
+    <script src="/app.js"></script>
+  </body>
+</html>
