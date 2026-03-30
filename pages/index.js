@@ -65,7 +65,7 @@ const DEFAULT_SECTION_PREFS = {
 
 function formatLap(ms) {
   const t = Number(ms);
-  if (!Number.isFinite(t) || t <= 0) return "01:58.163";
+  if (!Number.isFinite(t) || t <= 0) return "-";
   const minutes = Math.floor(t / 60000);
   const seconds = ((t % 60000) / 1000).toFixed(3).padStart(6, "0");
   return `${String(minutes).padStart(2, "0")}:${seconds}`;
@@ -160,24 +160,24 @@ export default function App() {
   const [showSetupModal, setShowSetupModal] = useState(false);
   const [sectionPrefs, setSectionPrefs] = useState(DEFAULT_SECTION_PREFS);
   const [telemetry, setTelemetry] = useState({
-    speed: 83,
-    gear: 2,
-    rpm: 6587,
+    speed: 0,
+    gear: 0,
+    rpm: 0,
     maxRpm: 12000,
-    throttle: 100,
+    throttle: 0,
     brake: 0,
-    fuelLaps: 1.58,
+    fuelLaps: 0,
     drs: false,
     tires: {
-      fl: { temp: 101, wear: 6, psi: 22.8 },
-      fr: { temp: 101, wear: 7, psi: 22.75 },
-      rl: { temp: 98, wear: 4, psi: 20.23 },
-      rr: { temp: 98, wear: 4, psi: 20.2 }
+      fl: { temp: 0, wear: 0, psi: 0 },
+      fr: { temp: 0, wear: 0, psi: 0 },
+      rl: { temp: 0, wear: 0, psi: 0 },
+      rr: { temp: 0, wear: 0, psi: 0 }
     },
     car: {
-      engineTemp: 119,
-      engineWear: 1,
-      gearboxWear: 1
+      engineTemp: 0,
+      engineWear: 0,
+      gearboxWear: 0
     }
   });
 
@@ -293,7 +293,9 @@ export default function App() {
   const deltaText =
     highlightedDriver && typeof highlightedDriver.gap === "string" && highlightedDriver.gap !== "Leader"
       ? highlightedDriver.gap
-      : "+0.000";
+      : "-";
+  const hasCarStatus = Boolean(summary?.latestCarStatus);
+  const fuelLapsText = hasCarStatus ? `+${telemetry.fuelLaps.toFixed(2)}` : "-";
   const weatherAdvice = getWeatherAdvice(session);
   const trackOutlook = getTrackOutlook(session);
   const weatherLower = String(session.weather || "").toLowerCase();
@@ -359,13 +361,13 @@ export default function App() {
                     <div className="text-xs text-slate-300 -mt-1">km/h • Gear {telemetry.gear} • {telemetry.rpm} rpm</div>
                     <div className="mt-1.5 flex items-center gap-1.5">
                       <span className="px-1.5 py-0.5 rounded-md bg-red-500/15 border border-red-400/30 text-[9px] text-red-200 font-semibold">DRS {telemetry.drs ? "ON" : "OFF"}</span>
-                      <span className="px-1.5 py-0.5 rounded-md bg-sky-500/15 border border-sky-400/30 text-[9px] text-sky-200 font-semibold">Fuel +{telemetry.fuelLaps.toFixed(2)}</span>
+                      <span className="px-1.5 py-0.5 rounded-md bg-sky-500/15 border border-sky-400/30 text-[9px] text-sky-200 font-semibold">Fuel {fuelLapsText}</span>
                     </div>
                   </div>
                   <div className="grid grid-cols-3 gap-1.5">
                     <div className="rounded-xl bg-white/5 border border-white/10 px-2 py-1.5 shadow-inner shadow-black/20">
                       <div className="text-[9px] uppercase text-slate-400">Lap</div>
-                      <div className="text-sm font-black">{lap.currentLapNum || 0}/{session.totalLaps || "-"}</div>
+                      <div className="text-sm font-black">{lap.currentLapNum || "-"}/{session.totalLaps || "-"}</div>
                     </div>
                     <div className="rounded-xl bg-white/5 border border-white/10 px-2 py-1.5 shadow-inner shadow-black/20">
                       <div className="text-[9px] uppercase text-slate-400">Position</div>
@@ -468,7 +470,7 @@ export default function App() {
                   <div className="mt-1.5 inline-flex px-1.5 py-0.5 rounded-md bg-red-500/15 border border-red-400/30 text-[9px] text-red-200 font-semibold">DRS {telemetry.drs ? "ON" : "OFF"}</div>
                 </div>
                 <div className="grid grid-cols-2 gap-1.5 text-[10px]">
-                  <div className="rounded-lg bg-white/5 border border-white/10 px-2 py-1">Lap {lap.currentLapNum || 0}/{session.totalLaps || "-"}</div>
+                  <div className="rounded-lg bg-white/5 border border-white/10 px-2 py-1">Lap {lap.currentLapNum || "-"}/{session.totalLaps || "-"}</div>
                   <div className="rounded-lg bg-white/5 border border-white/10 px-2 py-1">Pos P{userPos}</div>
                   <div className="rounded-lg bg-red-500/10 border border-red-500/30 px-2 py-1 col-span-2 text-red-200 font-mono">Delta {deltaText}</div>
                 </div>
@@ -606,7 +608,7 @@ export default function App() {
           <div className="flex justify-between items-center bg-zinc-900 p-2 md:p-3 border-b border-slate-800 shrink-0">
             <span className="text-lg md:text-xl xl:text-2xl font-black tracking-widest text-slate-100">LAP</span>
             <div className="flex items-baseline space-x-1">
-              <span className="text-xl md:text-2xl xl:text-3xl font-black text-white">{lap.currentLapNum || 0}</span>
+              <span className="text-xl md:text-2xl xl:text-3xl font-black text-white">{lap.currentLapNum || "-"}</span>
               <span className="text-xs md:text-sm xl:text-lg font-bold text-slate-500">/{session.totalLaps || "-"}</span>
             </div>
           </div>
@@ -648,7 +650,7 @@ export default function App() {
             <div className="bg-zinc-950 border border-slate-900 rounded-lg p-3 md:p-4 flex flex-col items-center justify-center shadow-xl">
               <h2 className="text-[10px] md:text-xs xl:text-sm font-black uppercase tracking-widest text-slate-400 mb-1">Fastest Lap</h2>
               <div className="text-4xl md:text-3xl xl:text-5xl font-mono font-black text-purple-500 drop-shadow-[0_0_8px_rgba(168,85,247,0.4)]">
-                {fastest?.best || "01:34.346"}
+                {fastest?.best || "-"}
               </div>
               <div className="text-sm md:text-base xl:text-lg font-bold text-purple-400 mt-1 tracking-wider">
                 {fastest?.name || "-"}
@@ -665,7 +667,7 @@ export default function App() {
               <div className="bg-zinc-950 border border-slate-900 rounded-lg p-2 md:p-3 flex flex-col items-center justify-center shadow-xl">
                 <div className="text-yellow-500 font-black text-[8px] md:text-[9px] xl:text-[10px] uppercase tracking-widest mb-1 text-center leading-tight">Pos Gained/Lost</div>
                 <div className="bg-slate-100 text-black text-xl md:text-2xl xl:text-3xl font-black py-0.5 w-10 md:w-12 xl:w-16 text-center rounded shadow-inner leading-none mt-1">0</div>
-                <div className="text-red-500 font-black text-sm md:text-base xl:text-lg mt-1">+0.000</div>
+                <div className="text-red-500 font-black text-sm md:text-base xl:text-lg mt-1">-</div>
               </div>
             </div>
           </div>
@@ -681,7 +683,7 @@ export default function App() {
             </div>
             <div className="text-center flex flex-col items-center px-1 w-full overflow-hidden">
               <div className="text-slate-400 text-[8px] md:text-[9px] xl:text-[10px] font-black uppercase tracking-widest">Best Lap</div>
-              <div className="text-lg md:text-xl lg:text-2xl xl:text-3xl font-mono font-black text-green-500 mt-2 truncate w-full">{fastest?.best || "01:34.346"}</div>
+              <div className="text-lg md:text-xl lg:text-2xl xl:text-3xl font-mono font-black text-green-500 mt-2 truncate w-full">{fastest?.best || "-"}</div>
             </div>
           </div>
 
@@ -738,7 +740,7 @@ export default function App() {
             <div className="flex items-center space-x-1.5 md:space-x-2 xl:space-x-3">
               <div className="relative w-8 h-8 md:w-10 md:h-10 xl:w-12 xl:h-12 rounded-full border-[3px] xl:border-4 border-red-600 bg-zinc-950 flex items-center justify-center shadow-[0_0_10px_rgba(220,38,38,0.5)]">
                 <div className="w-3 h-3 md:w-4 md:h-4 xl:w-5 xl:h-5 rounded-full border-2 border-slate-700 bg-zinc-800"></div>
-                <span className="absolute -bottom-2 bg-red-600 text-white text-[7px] md:text-[9px] xl:text-[10px] font-black px-1 rounded-sm">{summary?.latestCarStatus?.tyreCompoundLabel || "C3"}</span>
+                <span className="absolute -bottom-2 bg-red-600 text-white text-[7px] md:text-[9px] xl:text-[10px] font-black px-1 rounded-sm">{summary?.latestCarStatus?.tyreCompoundLabel || "-"}</span>
               </div>
               <div className="flex flex-col">
                 <span className="text-[7px] md:text-[9px] xl:text-[10px] text-slate-400 uppercase font-bold tracking-wider">Tyres Laps</span>
@@ -749,7 +751,7 @@ export default function App() {
             <div className="flex flex-col items-center">
               <span className="text-[7px] md:text-[8px] xl:text-[10px] uppercase font-black text-slate-400 tracking-wider mb-0.5 xl:mb-1">Pit Speed Lim</span>
               <div className="bg-slate-100 text-black rounded-full w-8 h-8 md:w-10 md:h-10 xl:w-12 xl:h-12 flex items-center justify-center border-[2px] md:border-[3px] xl:border-4 border-red-600 font-black text-sm md:text-lg xl:text-xl shadow-inner">
-                {summary?.latestSession?.pitSpeedLimitKph ?? 80}
+                {summary?.latestSession?.pitSpeedLimitKph ?? "-"}
               </div>
             </div>
 
@@ -850,7 +852,7 @@ export default function App() {
             <div className="flex flex-col items-end justify-end pb-1 xl:pb-2">
               <span className="text-[8px] md:text-[10px] xl:text-[11px] font-black uppercase text-green-500 tracking-wider">Fuel</span>
               <div className="bg-green-500/10 border border-green-500/30 px-1.5 md:px-2 xl:px-3 py-0.5 md:py-1 xl:py-1.5 rounded mt-0.5 md:mt-1">
-                <span className="text-[10px] md:text-sm xl:text-base font-mono font-bold text-green-400">+{telemetry.fuelLaps.toFixed(2)} Laps</span>
+                <span className="text-[10px] md:text-sm xl:text-base font-mono font-bold text-green-400">{fuelLapsText} Laps</span>
               </div>
             </div>
           </div>
@@ -862,7 +864,7 @@ export default function App() {
           <div className="flex justify-between items-center bg-zinc-900 p-2 md:p-3 border-b border-slate-800 shrink-0">
             <span className="text-lg md:text-xl xl:text-2xl font-black tracking-widest text-slate-100">LAP</span>
             <div className="flex items-baseline space-x-1">
-              <span className="text-xl md:text-2xl xl:text-3xl font-black text-white">{lap.currentLapNum || 0}</span>
+              <span className="text-xl md:text-2xl xl:text-3xl font-black text-white">{lap.currentLapNum || "-"}</span>
               <span className="text-xs md:text-sm xl:text-lg font-bold text-slate-500">/{session.totalLaps || "-"}</span>
             </div>
           </div>
@@ -904,7 +906,7 @@ export default function App() {
             <div className="bg-zinc-950 border border-slate-900 rounded-lg p-3 md:p-4 flex flex-col items-center justify-center shadow-xl">
               <h2 className="text-[10px] md:text-xs xl:text-sm font-black uppercase tracking-widest text-slate-400 mb-1">Fastest Lap</h2>
               <div className="text-4xl md:text-3xl xl:text-5xl font-mono font-black text-purple-500 drop-shadow-[0_0_8px_rgba(168,85,247,0.4)]">
-                {fastest?.best || "01:34.346"}
+                {fastest?.best || "-"}
               </div>
               <div className="text-sm md:text-base xl:text-lg font-bold text-purple-400 mt-1 tracking-wider">
                 {fastest?.name || "-"}
@@ -921,7 +923,7 @@ export default function App() {
               <div className="bg-zinc-950 border border-slate-900 rounded-lg p-2 md:p-3 flex flex-col items-center justify-center shadow-xl">
                 <div className="text-yellow-500 font-black text-[8px] md:text-[9px] xl:text-[10px] uppercase tracking-widest mb-1 text-center leading-tight">Pos Gained/Lost</div>
                 <div className="bg-slate-100 text-black text-xl md:text-2xl xl:text-3xl font-black py-0.5 w-10 md:w-12 xl:w-16 text-center rounded shadow-inner leading-none mt-1">0</div>
-                <div className="text-red-500 font-black text-sm md:text-base xl:text-lg mt-1">+0.000</div>
+                <div className="text-red-500 font-black text-sm md:text-base xl:text-lg mt-1">-</div>
               </div>
             </div>
           </div>
@@ -937,7 +939,7 @@ export default function App() {
             </div>
             <div className="text-center flex flex-col items-center px-1 w-full overflow-hidden">
               <div className="text-slate-400 text-[8px] md:text-[9px] xl:text-[10px] font-black uppercase tracking-widest">Best Lap</div>
-              <div className="text-lg md:text-xl lg:text-2xl xl:text-3xl font-mono font-black text-green-500 mt-2 truncate w-full">{fastest?.best || "01:34.346"}</div>
+              <div className="text-lg md:text-xl lg:text-2xl xl:text-3xl font-mono font-black text-green-500 mt-2 truncate w-full">{fastest?.best || "-"}</div>
             </div>
           </div>
 
@@ -976,7 +978,7 @@ export default function App() {
             <div className="flex items-center space-x-1.5 md:space-x-2 xl:space-x-3">
               <div className="relative w-8 h-8 md:w-10 md:h-10 xl:w-12 xl:h-12 rounded-full border-[3px] xl:border-4 border-red-600 bg-zinc-950 flex items-center justify-center shadow-[0_0_10px_rgba(220,38,38,0.5)]">
                 <div className="w-3 h-3 md:w-4 md:h-4 xl:w-5 xl:h-5 rounded-full border-2 border-slate-700 bg-zinc-800"></div>
-                <span className="absolute -bottom-2 bg-red-600 text-white text-[7px] md:text-[9px] xl:text-[10px] font-black px-1 rounded-sm">{summary?.latestCarStatus?.tyreCompoundLabel || "C3"}</span>
+                <span className="absolute -bottom-2 bg-red-600 text-white text-[7px] md:text-[9px] xl:text-[10px] font-black px-1 rounded-sm">{summary?.latestCarStatus?.tyreCompoundLabel || "-"}</span>
               </div>
               <div className="flex flex-col">
                 <span className="text-[7px] md:text-[9px] xl:text-[10px] text-slate-400 uppercase font-bold tracking-wider">Tyres Laps</span>
@@ -987,7 +989,7 @@ export default function App() {
             <div className="flex flex-col items-center">
               <span className="text-[7px] md:text-[8px] xl:text-[10px] uppercase font-black text-slate-400 tracking-wider mb-0.5 xl:mb-1">Pit Speed Lim</span>
               <div className="bg-slate-100 text-black rounded-full w-8 h-8 md:w-10 md:h-10 xl:w-12 xl:h-12 flex items-center justify-center border-[2px] md:border-[3px] xl:border-4 border-red-600 font-black text-sm md:text-lg xl:text-xl shadow-inner">
-                {summary?.latestSession?.pitSpeedLimitKph ?? 80}
+                {summary?.latestSession?.pitSpeedLimitKph ?? "-"}
               </div>
             </div>
 
@@ -1088,7 +1090,7 @@ export default function App() {
             <div className="flex flex-col items-end justify-end pb-1 xl:pb-2">
               <span className="text-[8px] md:text-[10px] xl:text-[11px] font-black uppercase text-green-500 tracking-wider">Fuel</span>
               <div className="bg-green-500/10 border border-green-500/30 px-1.5 md:px-2 xl:px-3 py-0.5 md:py-1 xl:py-1.5 rounded mt-0.5 md:mt-1">
-                <span className="text-[10px] md:text-sm xl:text-base font-mono font-bold text-green-400">+{telemetry.fuelLaps.toFixed(2)} Laps</span>
+                <span className="text-[10px] md:text-sm xl:text-base font-mono font-bold text-green-400">{fuelLapsText} Laps</span>
               </div>
             </div>
           </div>

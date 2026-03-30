@@ -142,6 +142,15 @@ const stats = {
   latestTelemetry: null,
   latestCarStatus: null,
   latestCarDamage: null,
+  latestMotion: null,
+  latestCarSetups: null,
+  latestFinalClassification: null,
+  latestLobbyInfo: null,
+  latestSessionHistory: null,
+  latestTyreSets: null,
+  latestMotionExtended: null,
+  latestTimeTrial: null,
+  latestLapPositions: null,
   eventHistory: [],
   driversOverview: []
 };
@@ -474,6 +483,313 @@ function parseEventPacket(buffer) {
   };
 }
 
+function parseMotionPacket(buffer, header) {
+  const carDataSize = 60;
+  const minimumSize = 29 + CAR_COUNT * carDataSize;
+  if (buffer.length < minimumSize) {
+    return null;
+  }
+
+  const allCars = [];
+  for (let i = 0; i < CAR_COUNT; i += 1) {
+    const o = 29 + i * carDataSize;
+    allCars.push({
+      index: i,
+      worldPositionX: Number(buffer.readFloatLE(o).toFixed(3)),
+      worldPositionY: Number(buffer.readFloatLE(o + 4).toFixed(3)),
+      worldPositionZ: Number(buffer.readFloatLE(o + 8).toFixed(3)),
+      worldVelocityX: Number(buffer.readFloatLE(o + 12).toFixed(3)),
+      worldVelocityY: Number(buffer.readFloatLE(o + 16).toFixed(3)),
+      worldVelocityZ: Number(buffer.readFloatLE(o + 20).toFixed(3)),
+      gForceLateral: Number(buffer.readFloatLE(o + 24).toFixed(3)),
+      gForceLongitudinal: Number(buffer.readFloatLE(o + 28).toFixed(3)),
+      gForceVertical: Number(buffer.readFloatLE(o + 32).toFixed(3)),
+      yaw: Number(buffer.readFloatLE(o + 36).toFixed(3)),
+      pitch: Number(buffer.readFloatLE(o + 40).toFixed(3)),
+      roll: Number(buffer.readFloatLE(o + 44).toFixed(3))
+    });
+  }
+
+  const playerCarIndex = clamp(header.playerCarIndex, 0, CAR_COUNT - 1);
+  return {
+    allCars,
+    player: allCars[playerCarIndex],
+    playerCarIndex,
+    receivedAt: Date.now()
+  };
+}
+
+function parseCarSetupsPacket(buffer, header) {
+  const carDataSize = 49;
+  const minimumSize = 29 + CAR_COUNT * carDataSize;
+  if (buffer.length < minimumSize) {
+    return null;
+  }
+
+  const allCars = [];
+  for (let i = 0; i < CAR_COUNT; i += 1) {
+    const o = 29 + i * carDataSize;
+    allCars.push({
+      index: i,
+      frontWing: buffer.readUInt8(o),
+      rearWing: buffer.readUInt8(o + 1),
+      onThrottle: buffer.readUInt8(o + 2),
+      offThrottle: buffer.readUInt8(o + 3),
+      frontCamber: Number(buffer.readFloatLE(o + 4).toFixed(2)),
+      rearCamber: Number(buffer.readFloatLE(o + 8).toFixed(2)),
+      frontToe: Number(buffer.readFloatLE(o + 12).toFixed(3)),
+      rearToe: Number(buffer.readFloatLE(o + 16).toFixed(3)),
+      frontSuspension: buffer.readUInt8(o + 20),
+      rearSuspension: buffer.readUInt8(o + 21),
+      frontAntiRollBar: buffer.readUInt8(o + 22),
+      rearAntiRollBar: buffer.readUInt8(o + 23),
+      frontSuspensionHeight: buffer.readUInt8(o + 24),
+      rearSuspensionHeight: buffer.readUInt8(o + 25),
+      brakePressure: buffer.readUInt8(o + 26),
+      brakeBias: buffer.readUInt8(o + 27),
+      rearLeftTyrePressure: Number(buffer.readFloatLE(o + 28).toFixed(2)),
+      rearRightTyrePressure: Number(buffer.readFloatLE(o + 32).toFixed(2)),
+      frontLeftTyrePressure: Number(buffer.readFloatLE(o + 36).toFixed(2)),
+      frontRightTyrePressure: Number(buffer.readFloatLE(o + 40).toFixed(2)),
+      ballast: buffer.readUInt8(o + 44),
+      fuelLoad: Number(buffer.readFloatLE(o + 45).toFixed(2))
+    });
+  }
+
+  const playerCarIndex = clamp(header.playerCarIndex, 0, CAR_COUNT - 1);
+  return {
+    allCars,
+    player: allCars[playerCarIndex],
+    playerCarIndex,
+    receivedAt: Date.now()
+  };
+}
+
+function parseFinalClassificationPacket(buffer) {
+  const base = 29;
+  if (buffer.length < base + 1) {
+    return null;
+  }
+  const numCars = buffer.readUInt8(base);
+  const entrySize = 45;
+  const requiredSize = base + 1 + numCars * entrySize;
+  if (buffer.length < requiredSize) {
+    return null;
+  }
+
+  const classification = [];
+  for (let i = 0; i < numCars; i += 1) {
+    const o = base + 1 + i * entrySize;
+    classification.push({
+      position: buffer.readUInt8(o),
+      numLaps: buffer.readUInt8(o + 1),
+      gridPosition: buffer.readUInt8(o + 2),
+      points: buffer.readUInt8(o + 3),
+      numPitStops: buffer.readUInt8(o + 4),
+      resultStatus: buffer.readUInt8(o + 5),
+      bestLapTimeMs: buffer.readUInt32LE(o + 6),
+      totalRaceTimeSec: Number(buffer.readDoubleLE(o + 10).toFixed(3)),
+      penaltiesTimeSec: buffer.readUInt8(o + 18),
+      numPenalties: buffer.readUInt8(o + 19),
+      numTyreStints: buffer.readUInt8(o + 20)
+    });
+  }
+
+  return {
+    numCars,
+    classification,
+    receivedAt: Date.now()
+  };
+}
+
+function parseLobbyInfoPacket(buffer) {
+  const base = 29;
+  if (buffer.length < base + 1) {
+    return null;
+  }
+  const numPlayers = buffer.readUInt8(base);
+  const entrySize = 54;
+  const requiredSize = base + 1 + numPlayers * entrySize;
+  if (buffer.length < requiredSize) {
+    return null;
+  }
+
+  const players = [];
+  for (let i = 0; i < numPlayers; i += 1) {
+    const o = base + 1 + i * entrySize;
+    players.push({
+      carIndex: buffer.readUInt8(o),
+      teamId: buffer.readUInt8(o + 1),
+      nationality: buffer.readUInt8(o + 2),
+      name: safeReadString(buffer, o + 3, 48) || `Player ${i + 1}`,
+      carNumber: buffer.readUInt8(o + 51),
+      readyStatus: buffer.readUInt8(o + 52)
+    });
+  }
+
+  return {
+    numPlayers,
+    players,
+    receivedAt: Date.now()
+  };
+}
+
+function parseSessionHistoryPacket(buffer) {
+  const base = 29;
+  if (buffer.length < base + 10) {
+    return null;
+  }
+
+  const carIndex = buffer.readUInt8(base);
+  const numLaps = buffer.readUInt8(base + 1);
+  const numTyreStints = buffer.readUInt8(base + 2);
+
+  const bestLapTimeLapNum = buffer.readUInt8(base + 3);
+  const bestSector1LapNum = buffer.readUInt8(base + 4);
+  const bestSector2LapNum = buffer.readUInt8(base + 5);
+  const bestSector3LapNum = buffer.readUInt8(base + 6);
+
+  const lapHistoryData = [];
+  const maxLapRecords = Math.min(numLaps, 100);
+  const lapSize = 14;
+  for (let i = 0; i < maxLapRecords; i += 1) {
+    const o = base + 10 + i * lapSize;
+    if (o + lapSize > buffer.length) {
+      break;
+    }
+    lapHistoryData.push({
+      lapTimeMs: buffer.readUInt32LE(o),
+      sector1TimeMs: buffer.readUInt16LE(o + 4),
+      sector2TimeMs: buffer.readUInt16LE(o + 6),
+      sector3TimeMs: buffer.readUInt16LE(o + 8),
+      lapValidBitFlags: buffer.readUInt8(o + 10)
+    });
+  }
+
+  return {
+    carIndex,
+    numLaps,
+    numTyreStints,
+    bestLapTimeLapNum,
+    bestSector1LapNum,
+    bestSector2LapNum,
+    bestSector3LapNum,
+    lapHistoryData,
+    receivedAt: Date.now()
+  };
+}
+
+function parseTyreSetsPacket(buffer) {
+  const base = 29;
+  if (buffer.length < base + 2) {
+    return null;
+  }
+  const carIndex = buffer.readUInt8(base);
+  const fittedIdx = buffer.readUInt8(buffer.length - 1);
+  const setSize = 10;
+  const maxSets = Math.floor((buffer.length - base - 1) / setSize);
+  const tyreSets = [];
+
+  for (let i = 0; i < maxSets; i += 1) {
+    const o = base + i * setSize;
+    if (o + setSize > buffer.length - 1) {
+      break;
+    }
+    tyreSets.push({
+      index: i,
+      actualTyreCompound: buffer.readUInt8(o),
+      visualTyreCompound: buffer.readUInt8(o + 1),
+      wearPct: buffer.readUInt8(o + 2),
+      available: buffer.readUInt8(o + 3) === 1,
+      recommendedSession: buffer.readUInt8(o + 4),
+      lifeSpanLaps: buffer.readUInt8(o + 5),
+      usableLifeLaps: buffer.readUInt8(o + 6),
+      lapDeltaTimeMs: buffer.readInt16LE(o + 7),
+      fitted: i === fittedIdx
+    });
+  }
+
+  return {
+    carIndex,
+    fittedIdx,
+    tyreSets,
+    receivedAt: Date.now()
+  };
+}
+
+function parseMotionExtendedPacket(buffer) {
+  const base = 29;
+  if (buffer.length < base + 4 * 4 * 4 + 4) {
+    return null;
+  }
+
+  const readFloatArray = (start, count) =>
+    Array.from({ length: count }, (_, i) => Number(buffer.readFloatLE(start + i * 4).toFixed(3)));
+
+  const suspensionPosition = readFloatArray(base, 4);
+  const suspensionVelocity = readFloatArray(base + 16, 4);
+  const suspensionAcceleration = readFloatArray(base + 32, 4);
+  const wheelSpeed = readFloatArray(base + 48, 4);
+  const wheelSlipRatio = readFloatArray(base + 64, 4);
+
+  return {
+    suspensionPosition,
+    suspensionVelocity,
+    suspensionAcceleration,
+    wheelSpeed,
+    wheelSlipRatio,
+    localVelocity: {
+      x: Number(buffer.readFloatLE(base + 80).toFixed(3)),
+      y: Number(buffer.readFloatLE(base + 84).toFixed(3)),
+      z: Number(buffer.readFloatLE(base + 88).toFixed(3))
+    },
+    angularVelocity: {
+      x: Number(buffer.readFloatLE(base + 92).toFixed(3)),
+      y: Number(buffer.readFloatLE(base + 96).toFixed(3)),
+      z: Number(buffer.readFloatLE(base + 100).toFixed(3))
+    },
+    frontWheelsAngle: Number(buffer.readFloatLE(base + 116).toFixed(3)),
+    receivedAt: Date.now()
+  };
+}
+
+function parseTimeTrialPacket(buffer) {
+  const base = 29;
+  if (buffer.length < base + 12) {
+    return null;
+  }
+
+  return {
+    playerSessionBestLapTimeMs: buffer.readUInt32LE(base),
+    playerPersonalBestLapTimeMs: buffer.readUInt32LE(base + 4),
+    playerCurrentLapTimeMs: buffer.readUInt32LE(base + 8),
+    packetSize: buffer.length,
+    receivedAt: Date.now()
+  };
+}
+
+function parseLapPositionsPacket(buffer) {
+  const base = 29;
+  if (buffer.length < base + 2) {
+    return null;
+  }
+  const carIndex = buffer.readUInt8(base);
+  const numLaps = buffer.readUInt8(base + 1);
+  const positions = [];
+  const start = base + 2;
+  const end = Math.min(buffer.length, start + numLaps);
+  for (let i = start; i < end; i += 1) {
+    positions.push(buffer.readUInt8(i));
+  }
+
+  return {
+    carIndex,
+    numLaps,
+    positions,
+    receivedAt: Date.now()
+  };
+}
+
 function computeDriversOverview() {
   const participants = stats.latestParticipants?.participants || [];
   const activeCars = participants.length > 0 ? participants.length : CAR_COUNT;
@@ -552,6 +868,15 @@ function getSummaryPayload() {
     latestTelemetry: stats.latestTelemetry,
     latestCarStatus: stats.latestCarStatus,
     latestCarDamage: stats.latestCarDamage,
+    latestMotion: stats.latestMotion,
+    latestCarSetups: stats.latestCarSetups,
+    latestFinalClassification: stats.latestFinalClassification,
+    latestLobbyInfo: stats.latestLobbyInfo,
+    latestSessionHistory: stats.latestSessionHistory,
+    latestTyreSets: stats.latestTyreSets,
+    latestMotionExtended: stats.latestMotionExtended,
+    latestTimeTrial: stats.latestTimeTrial,
+    latestLapPositions: stats.latestLapPositions,
     driversOverview: stats.driversOverview,
     eventHistory: stats.eventHistory
   };
@@ -608,6 +933,13 @@ app.prepare().then(() => {
     };
 
     switch (header.packetId) {
+      case 0: {
+        const p = parseMotionPacket(msg, header);
+        if (p) {
+          stats.latestMotion = p;
+        }
+        break;
+      }
       case 1: {
         const p = parseSessionPacket(msg);
         if (p) {
@@ -638,6 +970,13 @@ app.prepare().then(() => {
         }
         break;
       }
+      case 5: {
+        const p = parseCarSetupsPacket(msg, header);
+        if (p) {
+          stats.latestCarSetups = p;
+        }
+        break;
+      }
       case 6: {
         const p = parseCarTelemetryPacket(msg, header);
         if (p) {
@@ -659,6 +998,55 @@ app.prepare().then(() => {
         if (p) {
           stats.latestCarDamage = p.player;
           caches.damageAll = p.allCars;
+        }
+        break;
+      }
+      case 8: {
+        const p = parseFinalClassificationPacket(msg);
+        if (p) {
+          stats.latestFinalClassification = p;
+        }
+        break;
+      }
+      case 9: {
+        const p = parseLobbyInfoPacket(msg);
+        if (p) {
+          stats.latestLobbyInfo = p;
+        }
+        break;
+      }
+      case 11: {
+        const p = parseSessionHistoryPacket(msg);
+        if (p) {
+          stats.latestSessionHistory = p;
+        }
+        break;
+      }
+      case 12: {
+        const p = parseTyreSetsPacket(msg);
+        if (p) {
+          stats.latestTyreSets = p;
+        }
+        break;
+      }
+      case 13: {
+        const p = parseMotionExtendedPacket(msg);
+        if (p) {
+          stats.latestMotionExtended = p;
+        }
+        break;
+      }
+      case 14: {
+        const p = parseTimeTrialPacket(msg);
+        if (p) {
+          stats.latestTimeTrial = p;
+        }
+        break;
+      }
+      case 15: {
+        const p = parseLapPositionsPacket(msg);
+        if (p) {
+          stats.latestLapPositions = p;
         }
         break;
       }
