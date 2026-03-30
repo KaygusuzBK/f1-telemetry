@@ -1,0 +1,44 @@
+{
+  "expo": {
+    "name": "F1 Telemetry",
+    "slug": "telemetry-app",
+    "version": "1.0.0",
+    "orientation": "default",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": false,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#05060a"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.f1telemetry.mobile"
+    },
+    "android": {
+      "package": "com.f1telemetry.mobile",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#05060a"
+      },
+      "edgeToEdgeEnabled": true,
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "INTERNET"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-dev-client"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "935fa83d-66ef-4b61-8cb9-4be40d637a0e"
+      }
+    },
+    "owner": "kaygusuzbk"
+  }
+}
